@@ -9,7 +9,7 @@ st.markdown("""
     <style>
 body, .stApp {
     background-color: white !important;
-    color: black !important;
+    color: black !important; /* Changed to black */
 }
 .big-title {
     font-size: 2.5rem;
@@ -28,7 +28,7 @@ body, .stApp {
 }
 .stDataFrame, .stTable {
     background-color: white !important;
-    color: black !important;
+    color: black !important; /* Changed to black for DataFrame/Table text */
 }
 </style>
 """, unsafe_allow_html=True)
@@ -45,7 +45,7 @@ if uploaded_file:
     df.rename(columns={
         ' Product ': 'Product', ' Discount Band ': 'Discount Band', ' Units Sold ': 'Units Sold',
         ' Manufacturing Price ': 'Manufacturing Price', ' Sale Price ': 'Sale Price',
-        ' Gross Sales ': 'Gross Sales', ' Discounts ': 'Discounts', '  Sales ': 'Sales',
+        ' Gross Sales ': 'Gross Sales', ' Discounts ': 'Discounts', ' Sales ': 'Sales',
         ' COGS ': 'COGS', ' Profit ': 'Profit', ' Month Name ': 'Month Name'
     }, inplace=True)
 
@@ -179,21 +179,36 @@ if uploaded_file:
     # Suggestions Section
     st.markdown("---")
     st.subheader("💡 Tips for Improving Financial Performance")
-    tips = [
-        "✅ Monitor your Profit Margin regularly to ensure you're not just growing revenue but also maintaining profitability.",
-        "✅ Focus on high-performing products by analyzing top sales and profit contributors.",
-        "✅ Keep COGS under control by negotiating with suppliers or optimizing supply chain processes.",
-        "✅ Reduce unnecessary discounts unless they are part of a planned promotional strategy.",
-        "✅ Use year-over-year analysis to identify seasonal patterns and make proactive adjustments.",
-        "✅ Explore low-performing segments or countries for cost reduction or marketing refocus.",
-        "✅ Track cumulative sales against goals to maintain momentum and motivate teams.",
-        "✅ Maintain a balance between Gross Sales and Discounts to protect net profitability."
-    ]
-    for tip in tips:
-        st.markdown(f"- {tip}")
+
+    st.markdown("### Revenue Growth Strategies")
+    st.markdown("""
+    - **Identify High-Growth Segments:** Analyze sales by segment to pinpoint areas with the highest growth potential. Allocate more resources to these segments to maximize returns.
+    - **Optimize Pricing:** Review `Sale Price` and `Manufacturing Price` to ensure competitive yet profitable pricing strategies. Consider A/B testing different price points.
+    - **Expand Product Lines:** Explore opportunities to introduce new products that complement your existing offerings, especially in high-demand areas identified from the `Product Treemap`.
+    - **Targeted Marketing Campaigns:** Use insights from `Country` and `Segment` data to tailor marketing efforts, focusing on regions and customer groups with the highest sales potential.
+    """)
+
+    st.markdown("### Cost Management and Efficiency")
+    st.markdown("""
+    - **Control COGS:** Regularly review your `Cost of Goods Sold (COGS)` and `COGS to Sales` ratio. Look for ways to reduce supplier costs, optimize production processes, or improve inventory management.
+    - **Minimize Unnecessary Discounts:** While discounts can drive sales, excessive `Discounts` can erode `Profit`. Use the "Discount Impact on Profit" visualization to understand the ideal discount levels for different segments. Implement data-driven discount strategies.
+    - **Streamline Operations:** Analyze operational expenses that contribute to COGS. Identify bottlenecks or inefficiencies in your supply chain and manufacturing processes to reduce costs.
+    """)
+
+    st.markdown("### Profitability Enhancement")
+    st.markdown("""
+    - **Boost Profit Margins:** Continuously monitor `Profit Margin` by product. Focus on promoting products with higher profit margins and consider strategies to improve the margins of lower-performing products (e.g., cost reduction, price adjustments).
+    - **Strategic Product Mix:** Shift focus towards selling a higher proportion of products with better `Profit Margin` and `Sales` performance.
+    - **Analyze Underperforming Areas:** Investigate segments, countries, or products with low `Profit` or negative `Profit Margin`. Develop specific action plans to either improve their profitability or consider phasing them out.
+    """)
+
+    st.markdown("### Data-Driven Decision Making")
+    st.markdown("""
+    - **Leverage Year-over-Year Trends:** Use the "Year-over-Year Trends" analysis to forecast future performance, identify seasonal fluctuations, and prepare for peak and off-peak periods.
+    - **Monitor Key Performance Indicators (KPIs):** Regularly track `Total Sales`, `Total Profit`, and `Total COGS` against your business goals. Set clear targets and use the dashboard to monitor progress.
+    - **Conduct Regular Financial Reviews:** Schedule periodic reviews of your Profit and Loss Statement and other key metrics to make timely adjustments to your strategies.
+    """)
+
 
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
-
-
-
