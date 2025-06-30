@@ -2,9 +2,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from streamlit_extras.metric_cards import style_metric_cards
 
 st.set_page_config(page_title="📊 Financial Performance Dashboard", layout="wide")
-st.title("📈 Financial Performance Dashboard")
+st.markdown("""
+    <style>
+    .big-title { font-size: 2.5rem; font-weight: 700; color: #004080; }
+    .sub { font-size: 1.2rem; color: #555; }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("<div class='big-title'>📈 Financial Performance Dashboard</div>", unsafe_allow_html=True)
 
 # Upload file
 uploaded_file = st.file_uploader("📤 Upload your Financial Dataset (.csv or .xlsx)", type=["csv", "xlsx"])
@@ -13,7 +21,6 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith(".csv") else pd.read_excel(uploaded_file)
     df.columns = df.columns.str.strip()
 
-    # Rename and clean up columns
     df.rename(columns={
         ' Product ': 'Product', ' Discount Band ': 'Discount Band', ' Units Sold ': 'Units Sold',
         ' Manufacturing Price ': 'Manufacturing Price', ' Sale Price ': 'Sale Price',
@@ -36,61 +43,93 @@ if uploaded_file:
     df['Net Sales'] = df['Gross Sales'] - df['Discounts']
     df['Cumulative Sales'] = df['Sales'].cumsum()
 
-    # Filters
-    st.sidebar.header("🔍 Filter Panel")
+    # Sidebar filters
+    st.sidebar.header("🧰 Filter Panel")
     filters = {}
     for col in ['Segment', 'Country', 'Year', 'Product']:
         if col in df.columns:
             filters[col] = st.sidebar.multiselect(f"{col}", df[col].dropna().unique(), default=list(df[col].dropna().unique()))
+
     filtered_df = df.copy()
     for col, selected in filters.items():
         filtered_df = filtered_df[filtered_df[col].isin(selected)]
 
-    # KPIs
-    st.subheader("📌 Overall Summary")
-    k1, k2, k3 = st.columns(3)
+    # KPI Section
+    st.subheader("📌 Overall Financial Summary")
+    col1, col2, col3 = st.columns(3)
     total_sales = filtered_df['Sales'].sum()
     total_profit = filtered_df['Profit'].sum()
     total_cogs = filtered_df['COGS'].sum()
-    k1.metric("Total Sales", f"${total_sales:,.0f}")
-    k2.metric("Total Profit", f"${total_profit:,.0f}")
-    k3.metric("Total COGS", f"${total_cogs:,.0f}")
+    col1.metric("Total Sales", f"${total_sales:,.0f}", help="Sum of all sales")
+    col2.metric("Total Profit", f"${total_profit:,.0f}", help="Sum of all profits")
+    col3.metric("Total COGS", f"${total_cogs:,.0f}", help="Sum of Cost of Goods Sold")
+    style_metric_cards()
 
-    # Highlight highest sales and profit years
     if 'Year' in filtered_df.columns:
         sales_by_year = filtered_df.groupby('Year')['Sales'].sum().reset_index()
         profit_by_year = filtered_df.groupby('Year')['Profit'].sum().reset_index()
         max_sales_year = sales_by_year.loc[sales_by_year['Sales'].idxmax()]
         max_profit_year = profit_by_year.loc[profit_by_year['Profit'].idxmax()]
 
-        st.success(f"📈 Highest Sales Year: {int(max_sales_year['Year'])} (${max_sales_year['Sales']:,.0f})")
-        st.success(f"💰 Highest Profit Year: {int(max_profit_year['Year'])} (${max_profit_year['Profit']:,.0f})")
+        st.markdown(f"""
+            <div class='sub'>
+            📈 <b>Highest Sales Year:</b> {int(max_sales_year['Year'])} (${max_sales_year['Sales']:,.0f})  
+            💰 <b>Highest Profit Year:</b> {int(max_profit_year['Year'])} (${max_profit_year['Profit']:,.0f})
+            </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.subheader("📊 Dashboard Overview")
+    st.subheader("📊 Visual Insights")
 
-    col1, col2 = st.columns(2)
+    with st.expander("📌 View Key Visualizations", expanded=True):
+        tabs = st.tabs(["By Segment", "Profitability Heatmap", "Product Treemap", "Discount Impact", "YoY Trend"])
 
-    with col1:
-        if {'Segment', 'Sales'}.issubset(filtered_df.columns):
-            st.plotly_chart(px.bar(filtered_df.groupby('Segment')['Sales'].sum().reset_index(), x='Segment', y='Sales', title="Sales by Segment"), use_container_width=True)
-        if {'Country', 'Segment', 'Profit'}.issubset(filtered_df.columns):
-            heat = filtered_df.groupby(['Country', 'Segment'])['Profit'].sum().reset_index()
-            st.plotly_chart(px.density_heatmap(heat, x='Segment', y='Country', z='Profit', title="Profitability by Country and Segment", color_continuous_scale='Reds'), use_container_width=True)
+        with tabs[0]:
+            if {'Segment', 'Sales'}.issubset(filtered_df.columns):
+                seg_data = filtered_df.groupby('Segment')['Sales'].sum().reset_index()
+                fig = px.bar(seg_data, x='Segment', y='Sales', color='Segment', title="Sales by Segment", text_auto='.2s')
+                st.plotly_chart(fig, use_container_width=True)
 
-    with col2:
-        if {'Product', 'Sales'}.issubset(filtered_df.columns):
-            prod = filtered_df.groupby('Product')['Sales'].sum().reset_index()
-            st.plotly_chart(px.treemap(prod, path=['Product'], values='Sales', title="Sales by Product"), use_container_width=True)
-        if {'Discounts', 'Profit'}.issubset(filtered_df.columns):
-            st.plotly_chart(px.scatter(filtered_df, x='Discounts', y='Profit', color='Segment', title="Discount Impact on Profit"), use_container_width=True)
+        with tabs[1]:
+            if {'Country', 'Segment', 'Profit'}.issubset(filtered_df.columns):
+                heat = filtered_df.groupby(['Country', 'Segment'])['Profit'].sum().reset_index()
+                fig = px.density_heatmap(heat, x='Segment', y='Country', z='Profit', title="Profitability by Country and Segment", color_continuous_scale='Reds')
+                st.plotly_chart(fig, use_container_width=True)
 
-    metric = st.selectbox("Select metric to analyze YoY trends", ['Sales', 'Profit', 'COGS'])
-    if {'Year', 'Month Name', metric}.issubset(filtered_df.columns):
-        trend = filtered_df.groupby(['Year', 'Month Name'])[metric].sum().reset_index()
-        st.plotly_chart(px.line(trend, x='Month Name', y=metric, color='Year', markers=True, title=f"Year-over-Year {metric} Trends"), use_container_width=True)
+        with tabs[2]:
+            if {'Product', 'Sales'}.issubset(filtered_df.columns):
+                prod = filtered_df.groupby('Product')['Sales'].sum().reset_index()
+                fig = px.treemap(prod, path=['Product'], values='Sales', title="Sales Distribution by Product")
+                st.plotly_chart(fig, use_container_width=True)
+
+        with tabs[3]:
+            if {'Discounts', 'Profit', 'Segment'}.issubset(filtered_df.columns):
+                fig = px.scatter(filtered_df, x='Discounts', y='Profit', color='Segment', title="Discount Impact on Profit")
+                st.plotly_chart(fig, use_container_width=True)
+
+        with tabs[4]:
+            metric = st.selectbox("Select metric for Year-over-Year Analysis", ['Sales', 'Profit', 'COGS'])
+            if {'Year', 'Month Name', metric}.issubset(filtered_df.columns):
+                trend = filtered_df.groupby(['Year', 'Month Name'])[metric].sum().reset_index()
+                fig = px.line(trend, x='Month Name', y=metric, color='Year', markers=True, title=f"Year-over-Year {metric} Trends")
+                st.plotly_chart(fig, use_container_width=True)
+
+    # Extra Insights
+    st.markdown("---")
+    with st.expander("📈 Advanced Metrics"):
+        if 'Profit Margin' in filtered_df.columns:
+            margin = filtered_df.groupby('Product')['Profit Margin'].mean().reset_index().sort_values(by='Profit Margin', ascending=False)
+            fig = px.bar(margin.head(10), x='Profit Margin', y='Product', orientation='h', title="Top 10 Products by Avg. Profit Margin")
+            st.plotly_chart(fig, use_container_width=True)
+
+        if 'COGS to Sales' in filtered_df.columns:
+            ratio = filtered_df.groupby('Segment')['COGS to Sales'].mean().reset_index()
+            fig = px.pie(ratio, names='Segment', values='COGS to Sales', title="Avg. COGS-to-Sales Ratio by Segment")
+            st.plotly_chart(fig, use_container_width=True)
+
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
+
 
 
 
