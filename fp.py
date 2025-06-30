@@ -33,12 +33,30 @@ st.markdown("""
         color: black !important; /* DataFrame/Table text to black */
     }
     /* Ensure all other text is black */
-    p, li, h1, h2, h3, h4, h5, h6, .stMarkdown, .stText, .stMetric {
+    p, li, h1, h2, h3, h4, h5, h6, .stMarkdown, .stText {
         color: black !important;
     }
-    /* Metric values should also be black, unless explicitly styled otherwise by Streamlit internals */
+
+    /* Financial Summary Metric Values to Blue */
     .stMetric > div > div:nth-child(2) > div {
-        color: black !important;
+        color: #004080 !important; /* Blue color for metric values */
+        font-weight: bold;
+    }
+
+    /* Sidebar Background Color to Blue */
+    section.main[data-testid="stSidebar"] {
+        background-color: #e6f2ff; /* A light blue color */
+        color: black; /* Ensure text inside sidebar is readable */
+    }
+
+    /* Change sidebar header color to make it visible on blue background */
+    [data-testid="stSidebar"] .st-emotion-cache-vk333a { /* This targets the header element within the sidebar */
+        color: black !important; /* Or a darker blue if preferred */
+    }
+
+    /* Adjust sidebar multiselect background to be visible on blue sidebar */
+    .stMultiSelect div[data-baseweb="select"] {
+        background-color: white !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -73,7 +91,7 @@ if uploaded_file:
         # If 'Date' column is missing, create dummy columns for filters to avoid errors
         df['Year'] = 2023 # Default year
         df['Month Name'] = 'January' # Default month
-        st.warning("Date column not found. Date and Quarter filters will not be fully functional.")
+        st.warning("Date column not found. Date and Quarter filters may not be fully functional.")
 
 
     # Calculated metrics
