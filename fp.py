@@ -127,6 +127,22 @@ if uploaded_file:
             fig = px.pie(ratio, names='Segment', values='COGS to Sales', title="Avg. COGS-to-Sales Ratio by Segment")
             st.plotly_chart(fig, use_container_width=True)
 
+    # Profit and Loss Statement Section
+    st.markdown("---")
+    st.subheader("📋 Profit and Loss Statement")
+
+    pnl_data = {
+        "Total Revenue (Gross Sales)": filtered_df['Gross Sales'].sum() if 'Gross Sales' in filtered_df.columns else 0,
+        "Discounts": filtered_df['Discounts'].sum() if 'Discounts' in filtered_df.columns else 0,
+        "Net Sales": filtered_df['Net Sales'].sum() if 'Net Sales' in filtered_df.columns else 0,
+        "Cost of Goods Sold (COGS)": filtered_df['COGS'].sum() if 'COGS' in filtered_df.columns else 0,
+        "Gross Profit": filtered_df['Sales'].sum() - filtered_df['COGS'].sum() if {'Sales', 'COGS'}.issubset(filtered_df.columns) else 0,
+        "Operating Profit (EBIT)": filtered_df['Profit'].sum() if 'Profit' in filtered_df.columns else 0
+    }
+
+    pnl_df = pd.DataFrame(list(pnl_data.items()), columns=["Line Item", "Amount ($)"])
+    st.dataframe(pnl_df.style.format({"Amount ($)": "${:,.0f}"}), use_container_width=True)
+
     # Suggestions Section
     st.markdown("---")
     st.subheader("💡 Tips for Improving Financial Performance")
@@ -145,8 +161,6 @@ if uploaded_file:
 
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
-
-
 
 
 
