@@ -10,7 +10,6 @@ st.title("📊 Financial Performance Dashboard")
 df = st.file_uploader("Upload Financial Dataset (.csv or .xlsx)", type=["csv", "xlsx"])
 
 if df:
-    # Load dataset
     if df.name.endswith(".csv"):
         data = pd.read_csv(df)
     else:
@@ -19,31 +18,36 @@ if df:
     # Clean column names
     data.columns = data.columns.str.strip()
 
-    # Debug: show available columns
+    # Display available columns for debugging
     st.write("Available columns:", data.columns.tolist())
 
-    # Convert and extract date components if 'Date' exists
+    # Convert numerical columns to appropriate types
+    for col in ['Profit', 'Sales', 'COGS', 'Gross Sales', 'Discounts']:
+        if col in data.columns:
+            data[col] = pd.to_numeric(data[col], errors='coerce')
+
+    # Date Handling
     if 'Date' in data.columns:
         data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
         data['Year'] = pd.DatetimeIndex(data['Date']).year
         data['Month Name'] = pd.DatetimeIndex(data['Date']).month_name()
 
-    # Create calculated fields safely
+    # Calculated Fields with column checks
     if 'Profit' in data.columns and 'Sales' in data.columns:
-        data['Profit Margin'] = data['Profit'] / data['Sales']
+        data['Profit Margin'] = data['Profit'].div(data['Sales'].replace(0, pd.NA))
     if 'Discounts' in data.columns:
         data['Total Discounts'] = data['Discounts']
     if 'Gross Sales' in data.columns:
         data['Total Revenue'] = data['Gross Sales']
     if 'COGS' in data.columns and 'Sales' in data.columns:
-        data['COGS to Sales'] = data['COGS'] / data['Sales']
+        data['COGS to Sales'] = data['COGS'].div(data['Sales'].replace(0, pd.NA))
     if 'Gross Sales' in data.columns and 'Discounts' in data.columns:
         data['Net Sales'] = data['Gross Sales'] - data['Discounts']
 
-    # Sidebar Filters with column checks
+    # Sidebar Filters with safe fallback
     st.sidebar.header("Filters")
-    segment_options = data['Segment'].unique().tolist() if 'Segment' in data.columns else []
-    country_options = data['Country'].unique().tolist() if 'Country' in data.columns else []
+    segment_options = data['Segment'].dropna().unique().tolist() if 'Segment' in data.columns else []
+    country_options = data['Country'].dropna().unique().tolist() if 'Country' in data.columns else []
     year_options = data['Year'].dropna().unique().tolist() if 'Year' in data.columns else []
 
     selected_segment = st.sidebar.multiselect("Segment", options=segment_options, default=segment_options)
@@ -58,7 +62,7 @@ if df:
     if 'Year' in data.columns:
         filtered_data = filtered_data[filtered_data['Year'].isin(selected_year)]
 
-    # KPI Metrics
+    # KPI Section
     total_sales = filtered_data['Sales'].sum() if 'Sales' in filtered_data.columns else 0
     total_profit = filtered_data['Profit'].sum() if 'Profit' in filtered_data.columns else 0
     total_cogs = filtered_data['COGS'].sum() if 'COGS' in filtered_data.columns else 0
@@ -72,7 +76,7 @@ if df:
 
     st.markdown("---")
 
-    # Tabs for visualizations
+    # Visuals
     tab1, tab2, tab3, tab4 = st.tabs(["Sales by Country", "Trend Over Time", "Gross vs Discount", "Product Discounts"])
 
     with tab1:
@@ -82,7 +86,7 @@ if df:
             st.plotly_chart(fig, use_container_width=True)
 
     with tab2:
-        if {'Year', 'Month Name'}.issubset(filtered_data.columns):
+        if {'Year', 'Month Name', 'Sales'}.issubset(filtered_data.columns):
             trend_data = filtered_data.groupby(['Year', 'Month Name']).agg({'Sales': 'sum', 'Profit': 'sum'}).reset_index()
             fig = px.line(trend_data, x='Month Name', y='Sales', color='Year', title="Sales Trend Over Time")
             st.plotly_chart(fig, use_container_width=True)
@@ -108,7 +112,5 @@ if df:
 else:
     st.info("Please upload the dataset to get started.")
 
-
-   
 
 
