@@ -66,7 +66,7 @@ if uploaded_file:
 
     # Sidebar filters
     st.sidebar.header("🧰 Filter Panel")
-    filters = {}  # initialize first
+    filters = {}
 
     if 'Date' in df.columns:
         df['Quarter'] = df['Date'].dt.to_period('Q').astype(str)
@@ -74,14 +74,13 @@ if uploaded_file:
         date_max = df['Date'].max()
         filters['Date'] = st.sidebar.date_input("Date Range", [date_min, date_max], min_value=date_min, max_value=date_max)
         filters['Quarter'] = st.sidebar.multiselect("Quarter", df['Quarter'].dropna().unique(), default=list(df['Quarter'].dropna().unique()))
-    filters = {}  # initialize before use
     for col in ['Segment', 'Country', 'Year', 'Product']:
         if col in df.columns:
             filters[col] = st.sidebar.multiselect(f"{col}", df[col].dropna().unique(), default=list(df[col].dropna().unique()))
 
     filtered_df = df.copy()
     for col, selected in filters.items():
-        if col == 'Date':
+        if col == 'Date' and isinstance(selected, list) and len(selected) == 2:
             start_date = pd.to_datetime(selected[0])
             end_date = pd.to_datetime(selected[1])
             filtered_df = filtered_df[(filtered_df['Date'] >= start_date) & (filtered_df['Date'] <= end_date)]
@@ -195,5 +194,6 @@ if uploaded_file:
 
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
+
 
 
