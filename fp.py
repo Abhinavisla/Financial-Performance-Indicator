@@ -8,26 +8,26 @@ st.set_page_config(page_title="📊 Financial Performance Dashboard", layout="wi
 st.markdown("""
     <style>
 body, .stApp {
-    background-color: #000000 !important;
-    color: #FF4B4B !important;
+    background-color: white !important;
+    color: black !important;
 }
 .big-title {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #FF4B4B !important;
+    color: #004080 !important;
 }
 .sub {
     font-size: 1.2rem;
-    color: #DDDDDD !important;
+    color: #555 !important;
 }
 .stButton>button, .stSelectbox>div>div>div {
-    background-color: #FF4B4B !important;
+    background-color: #004080 !important;
     color: white !important;
     border-radius: 5px;
     border: none;
 }
 .stDataFrame, .stTable {
-    background-color: #1a1a1a !important;
+    background-color: white !important;
     color: #FF4B4B !important;
 }
 </style>
@@ -73,7 +73,7 @@ if uploaded_file:
         date_min = df['Date'].min()
         date_max = df['Date'].max()
         filters['Date'] = st.sidebar.date_input("Date Range", [date_min, date_max], min_value=date_min, max_value=date_max)
-        filters['Quarter'] = st.sidebar.multiselect("Quarter", df['Quarter'].dropna().unique(), default=list(df['Quarter'].dropna().unique())).unique(), default=list(df['Quarter'].dropna().unique()))
+        filters['Quarter'] = st.sidebar.multiselect("Quarter", df['Quarter'].dropna().unique(), default=list(df['Quarter'].dropna().unique()))
     filters = {}  # initialize before use
     for col in ['Segment', 'Country', 'Year', 'Product']:
         if col in df.columns:
@@ -195,4 +195,5 @@ if uploaded_file:
 
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
+
 
