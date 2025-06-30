@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 # Page config
 st.set_page_config(page_title="📊 Financial Performance Dashboard", layout="wide")
 
-# Custom CSS for styling (including black text for most elements)
+# Custom CSS for styling
 st.markdown("""
     <style>
     body, .stApp {
@@ -37,9 +37,9 @@ st.markdown("""
         color: black !important;
     }
 
-    /* Financial Summary Metric Values to Blue */
+    /* Financial Summary Metric Values to BLACK */
     .stMetric > div > div:nth-child(2) > div {
-        color: #004080 !important; /* Blue color for metric values */
+        color: black !important; /* Changed to black */
         font-weight: bold;
     }
 
