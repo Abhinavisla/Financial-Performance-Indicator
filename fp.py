@@ -16,23 +16,40 @@ df = st.file_uploader("📤 Upload your Financial Dataset (.csv or .xlsx)", type
 if df:
     # Load data
     data = pd.read_csv(df) if df.name.endswith(".csv") else pd.read_excel(df)
-    
-    # Clean column names
+
+    # --------------------------- #
+    # 🧹 CLEAN & RENAME COLUMNS
+    # --------------------------- #
     data.columns = data.columns.str.strip()
-
-    # Show available columns (debug)
-    st.write("🧾 Available columns in dataset:", data.columns.tolist())
+    column_renames = {
+        ' Product ': 'Product',
+        ' Discount Band ': 'Discount Band',
+        ' Units Sold ': 'Units Sold',
+        ' Manufacturing Price ': 'Manufacturing Price',
+        ' Sale Price ': 'Sale Price',
+        ' Gross Sales ': 'Gross Sales',
+        ' Discounts ': 'Discounts',
+        '  Sales ': 'Sales',
+        ' COGS ': 'COGS',
+        ' Profit ': 'Profit',
+        ' Month Name ': 'Month Name'
+    }
+    data.rename(columns=column_renames, inplace=True)
 
     # --------------------------- #
-    # 🔢 CONVERT NUMERIC COLUMNS SAFELY
+    # 🔢 CLEAN NUMERIC CURRENCY COLUMNS
     # --------------------------- #
-    numeric_cols = ['Profit', 'Sales', 'COGS', 'Gross Sales', 'Discounts']
-    for col in numeric_cols:
+    currency_columns = [
+        'Units Sold', 'Manufacturing Price', 'Sale Price',
+        'Gross Sales', 'Discounts', 'Sales', 'COGS', 'Profit'
+    ]
+    for col in currency_columns:
         if col in data.columns:
+            data[col] = data[col].replace('[\$,]', '', regex=True).replace('-', '0')
             data[col] = pd.to_numeric(data[col], errors='coerce')
 
     # --------------------------- #
-    # 🗓️ HANDLE DATES
+    # 🗓️ DATE PARSING
     # --------------------------- #
     if 'Date' in data.columns:
         data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
@@ -44,16 +61,15 @@ if df:
     # --------------------------- #
     if {'Profit', 'Sales'}.issubset(data.columns):
         data['Profit Margin'] = data['Profit'].div(data['Sales'].replace(0, pd.NA))
-    if 'Gross Sales' in data.columns and 'Discounts' in data.columns:
-        data['Net Sales'] = data['Gross Sales'] - data['Discounts']
     if {'COGS', 'Sales'}.issubset(data.columns):
         data['COGS to Sales'] = data['COGS'].div(data['Sales'].replace(0, pd.NA))
+    if {'Gross Sales', 'Discounts'}.issubset(data.columns):
+        data['Net Sales'] = data['Gross Sales'] - data['Discounts']
 
     # --------------------------- #
     # 🧰 FILTERS (SIDEBAR)
     # --------------------------- #
     st.sidebar.header("🔍 Filter Data")
-
     segment_filter = st.sidebar.multiselect(
         "Segment", data['Segment'].dropna().unique() if 'Segment' in data.columns else [], default=None)
     country_filter = st.sidebar.multiselect(
@@ -62,7 +78,6 @@ if df:
         "Year", data['Year'].dropna().unique() if 'Year' in data.columns else [], default=None)
 
     filtered_data = data.copy()
-
     if segment_filter and 'Segment' in data.columns:
         filtered_data = filtered_data[filtered_data['Segment'].isin(segment_filter)]
     if country_filter and 'Country' in data.columns:
@@ -74,7 +89,6 @@ if df:
     # 📊 KPI METRICS
     # --------------------------- #
     st.markdown("## 📌 Key Performance Indicators")
-
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
     kpi1.metric("Total Sales", f"${filtered_data['Sales'].sum():,.0f}" if 'Sales' in filtered_data.columns else "N/A")
     kpi2.metric("Total Profit", f"${filtered_data['Profit'].sum():,.0f}" if 'Profit' in filtered_data.columns else "N/A")
@@ -114,6 +128,8 @@ if df:
 
 else:
     st.info("📂 Please upload a dataset file to begin analyzing.")
+
+         
 
 
 
