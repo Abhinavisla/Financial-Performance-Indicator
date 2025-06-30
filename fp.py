@@ -28,7 +28,6 @@ body, .stApp {
 }
 .stDataFrame, .stTable {
     background-color: white !important;
-    color: #FF4B4B !important;
 }
 </style>
 """, unsafe_allow_html=True)
