@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from streamlit_extras.metric_cards import style_metric_cards
 
+# Page config
 st.set_page_config(page_title="📊 Financial Performance Dashboard", layout="wide")
+
+# Title styling
 st.markdown("""
     <style>
     .big-title { font-size: 2.5rem; font-weight: 700; color: #004080; }
@@ -14,13 +16,14 @@ st.markdown("""
 
 st.markdown("<div class='big-title'>📈 Financial Performance Dashboard</div>", unsafe_allow_html=True)
 
-# Upload file
+# Upload
 uploaded_file = st.file_uploader("📤 Upload your Financial Dataset (.csv or .xlsx)", type=["csv", "xlsx"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith(".csv") else pd.read_excel(uploaded_file)
     df.columns = df.columns.str.strip()
 
+    # Rename and clean columns
     df.rename(columns={
         ' Product ': 'Product', ' Discount Band ': 'Discount Band', ' Units Sold ': 'Units Sold',
         ' Manufacturing Price ': 'Manufacturing Price', ' Sale Price ': 'Sale Price',
@@ -30,7 +33,7 @@ if uploaded_file:
 
     for col in ['Units Sold', 'Manufacturing Price', 'Sale Price', 'Gross Sales', 'Discounts', 'Sales', 'COGS', 'Profit']:
         if col in df.columns:
-            df[col] = df[col].replace('[\$,]', '', regex=True).replace('-', '0')
+            df[col] = df[col].replace('[\\$,]', '', regex=True).replace('-', '0')
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
     if 'Date' in df.columns:
@@ -38,12 +41,13 @@ if uploaded_file:
         df['Year'] = df['Date'].dt.year
         df['Month Name'] = df['Date'].dt.month_name()
 
+    # Calculated metrics
     df['Profit Margin'] = df['Profit'] / df['Sales'].replace(0, pd.NA)
     df['COGS to Sales'] = df['COGS'] / df['Sales'].replace(0, pd.NA)
     df['Net Sales'] = df['Gross Sales'] - df['Discounts']
     df['Cumulative Sales'] = df['Sales'].cumsum()
 
-    # Sidebar filters
+    # Sidebar Filters
     st.sidebar.header("🧰 Filter Panel")
     filters = {}
     for col in ['Segment', 'Country', 'Year', 'Product']:
@@ -54,17 +58,18 @@ if uploaded_file:
     for col, selected in filters.items():
         filtered_df = filtered_df[filtered_df[col].isin(selected)]
 
-    # KPI Section
+    # KPIs
     st.subheader("📌 Overall Financial Summary")
     col1, col2, col3 = st.columns(3)
     total_sales = filtered_df['Sales'].sum()
     total_profit = filtered_df['Profit'].sum()
     total_cogs = filtered_df['COGS'].sum()
-    col1.metric("Total Sales", f"${total_sales:,.0f}", help="Sum of all sales")
-    col2.metric("Total Profit", f"${total_profit:,.0f}", help="Sum of all profits")
-    col3.metric("Total COGS", f"${total_cogs:,.0f}", help="Sum of Cost of Goods Sold")
-    style_metric_cards()
+    col1.metric("Total Sales", f"${total_sales:,.0f}")
+    col2.metric("Total Profit", f"${total_profit:,.0f}")
+    col3.metric("Total COGS", f"${total_cogs:,.0f}")
+    # style_metric_cards()  # Disabled to avoid error
 
+    # Year Highlights
     if 'Year' in filtered_df.columns:
         sales_by_year = filtered_df.groupby('Year')['Sales'].sum().reset_index()
         profit_by_year = filtered_df.groupby('Year')['Profit'].sum().reset_index()
@@ -93,7 +98,8 @@ if uploaded_file:
         with tabs[1]:
             if {'Country', 'Segment', 'Profit'}.issubset(filtered_df.columns):
                 heat = filtered_df.groupby(['Country', 'Segment'])['Profit'].sum().reset_index()
-                fig = px.density_heatmap(heat, x='Segment', y='Country', z='Profit', title="Profitability by Country and Segment", color_continuous_scale='Reds')
+                fig = px.density_heatmap(heat, x='Segment', y='Country', z='Profit',
+                                         title="Profitability by Country and Segment", color_continuous_scale='Reds')
                 st.plotly_chart(fig, use_container_width=True)
 
         with tabs[2]:
@@ -111,10 +117,11 @@ if uploaded_file:
             metric = st.selectbox("Select metric for Year-over-Year Analysis", ['Sales', 'Profit', 'COGS'])
             if {'Year', 'Month Name', metric}.issubset(filtered_df.columns):
                 trend = filtered_df.groupby(['Year', 'Month Name'])[metric].sum().reset_index()
-                fig = px.line(trend, x='Month Name', y=metric, color='Year', markers=True, title=f"Year-over-Year {metric} Trends")
+                fig = px.line(trend, x='Month Name', y=metric, color='Year', markers=True,
+                              title=f"Year-over-Year {metric} Trends")
                 st.plotly_chart(fig, use_container_width=True)
 
-    # Extra Insights
+    # Advanced Metrics Section
     st.markdown("---")
     with st.expander("📈 Advanced Metrics"):
         if 'Profit Margin' in filtered_df.columns:
@@ -129,6 +136,7 @@ if uploaded_file:
 
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
+
 
 
 
