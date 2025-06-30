@@ -49,14 +49,26 @@ if uploaded_file:
     # KPIs
     st.subheader("📌 Overall Summary")
     k1, k2, k3 = st.columns(3)
-    k1.metric("Total Sales", f"${filtered_df['Sales'].sum():,.0f}")
-    k2.metric("Total Profit", f"${filtered_df['Profit'].sum():,.0f}")
-    k3.metric("Total COGS", f"${filtered_df['COGS'].sum():,.0f}")
+    total_sales = filtered_df['Sales'].sum()
+    total_profit = filtered_df['Profit'].sum()
+    total_cogs = filtered_df['COGS'].sum()
+    k1.metric("Total Sales", f"${total_sales:,.0f}")
+    k2.metric("Total Profit", f"${total_profit:,.0f}")
+    k3.metric("Total COGS", f"${total_cogs:,.0f}")
+
+    # Highlight highest sales and profit years
+    if 'Year' in filtered_df.columns:
+        sales_by_year = filtered_df.groupby('Year')['Sales'].sum().reset_index()
+        profit_by_year = filtered_df.groupby('Year')['Profit'].sum().reset_index()
+        max_sales_year = sales_by_year.loc[sales_by_year['Sales'].idxmax()]
+        max_profit_year = profit_by_year.loc[profit_by_year['Profit'].idxmax()]
+
+        st.success(f"📈 Highest Sales Year: {int(max_sales_year['Year'])} (${max_sales_year['Sales']:,.0f})")
+        st.success(f"💰 Highest Profit Year: {int(max_profit_year['Year'])} (${max_profit_year['Profit']:,.0f})")
 
     st.markdown("---")
     st.subheader("📊 Dashboard Overview")
 
-    # Layout: 2 columns with 3 charts
     col1, col2 = st.columns(2)
 
     with col1:
@@ -73,13 +85,13 @@ if uploaded_file:
         if {'Discounts', 'Profit'}.issubset(filtered_df.columns):
             st.plotly_chart(px.scatter(filtered_df, x='Discounts', y='Profit', color='Segment', title="Discount Impact on Profit"), use_container_width=True)
 
-    # Year-over-Year trend with parameter control
     metric = st.selectbox("Select metric to analyze YoY trends", ['Sales', 'Profit', 'COGS'])
     if {'Year', 'Month Name', metric}.issubset(filtered_df.columns):
         trend = filtered_df.groupby(['Year', 'Month Name'])[metric].sum().reset_index()
         st.plotly_chart(px.line(trend, x='Month Name', y=metric, color='Year', markers=True, title=f"Year-over-Year {metric} Trends"), use_container_width=True)
 else:
     st.info("📁 Upload a CSV or Excel file to begin.")
+
 
 
 
