@@ -2,115 +2,119 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Title and Sidebar Setup
-st.set_page_config(page_title="Financial Performance Dashboard", layout="wide")
-st.title("📊 Financial Performance Dashboard")
+# --------------------------- #
+# 🚀 PAGE CONFIGURATION
+# --------------------------- #
+st.set_page_config(page_title="📊 Financial Performance Dashboard", layout="wide")
+st.title("📈 Financial Performance Dashboard")
 
-# Upload Dataset
-df = st.file_uploader("Upload Financial Dataset (.csv or .xlsx)", type=["csv", "xlsx"])
+# --------------------------- #
+# 📂 FILE UPLOAD SECTION
+# --------------------------- #
+df = st.file_uploader("📤 Upload your Financial Dataset (.csv or .xlsx)", type=["csv", "xlsx"])
 
 if df:
-    if df.name.endswith(".csv"):
-        data = pd.read_csv(df)
-    else:
-        data = pd.read_excel(df)
-
+    # Load data
+    data = pd.read_csv(df) if df.name.endswith(".csv") else pd.read_excel(df)
+    
     # Clean column names
     data.columns = data.columns.str.strip()
 
-    # Display available columns for debugging
-    st.write("Available columns:", data.columns.tolist())
+    # Show available columns (debug)
+    st.write("🧾 Available columns in dataset:", data.columns.tolist())
 
-    # Convert numerical columns to appropriate types
-    for col in ['Profit', 'Sales', 'COGS', 'Gross Sales', 'Discounts']:
+    # --------------------------- #
+    # 🔢 CONVERT NUMERIC COLUMNS SAFELY
+    # --------------------------- #
+    numeric_cols = ['Profit', 'Sales', 'COGS', 'Gross Sales', 'Discounts']
+    for col in numeric_cols:
         if col in data.columns:
             data[col] = pd.to_numeric(data[col], errors='coerce')
 
-    # Date Handling
+    # --------------------------- #
+    # 🗓️ HANDLE DATES
+    # --------------------------- #
     if 'Date' in data.columns:
         data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
-        data['Year'] = pd.DatetimeIndex(data['Date']).year
-        data['Month Name'] = pd.DatetimeIndex(data['Date']).month_name()
+        data['Year'] = data['Date'].dt.year
+        data['Month Name'] = data['Date'].dt.month_name()
 
-    # Calculated Fields with column checks
-    if 'Profit' in data.columns and 'Sales' in data.columns:
+    # --------------------------- #
+    # 🧮 CALCULATED FIELDS
+    # --------------------------- #
+    if {'Profit', 'Sales'}.issubset(data.columns):
         data['Profit Margin'] = data['Profit'].div(data['Sales'].replace(0, pd.NA))
-    if 'Discounts' in data.columns:
-        data['Total Discounts'] = data['Discounts']
-    if 'Gross Sales' in data.columns:
-        data['Total Revenue'] = data['Gross Sales']
-    if 'COGS' in data.columns and 'Sales' in data.columns:
-        data['COGS to Sales'] = data['COGS'].div(data['Sales'].replace(0, pd.NA))
     if 'Gross Sales' in data.columns and 'Discounts' in data.columns:
         data['Net Sales'] = data['Gross Sales'] - data['Discounts']
+    if {'COGS', 'Sales'}.issubset(data.columns):
+        data['COGS to Sales'] = data['COGS'].div(data['Sales'].replace(0, pd.NA))
 
-    # Sidebar Filters with safe fallback
-    st.sidebar.header("Filters")
-    segment_options = data['Segment'].dropna().unique().tolist() if 'Segment' in data.columns else []
-    country_options = data['Country'].dropna().unique().tolist() if 'Country' in data.columns else []
-    year_options = data['Year'].dropna().unique().tolist() if 'Year' in data.columns else []
+    # --------------------------- #
+    # 🧰 FILTERS (SIDEBAR)
+    # --------------------------- #
+    st.sidebar.header("🔍 Filter Data")
 
-    selected_segment = st.sidebar.multiselect("Segment", options=segment_options, default=segment_options)
-    selected_country = st.sidebar.multiselect("Country", options=country_options, default=country_options)
-    selected_year = st.sidebar.multiselect("Year", options=year_options, default=year_options)
+    segment_filter = st.sidebar.multiselect(
+        "Segment", data['Segment'].dropna().unique() if 'Segment' in data.columns else [], default=None)
+    country_filter = st.sidebar.multiselect(
+        "Country", data['Country'].dropna().unique() if 'Country' in data.columns else [], default=None)
+    year_filter = st.sidebar.multiselect(
+        "Year", data['Year'].dropna().unique() if 'Year' in data.columns else [], default=None)
 
     filtered_data = data.copy()
-    if 'Segment' in data.columns:
-        filtered_data = filtered_data[filtered_data['Segment'].isin(selected_segment)]
-    if 'Country' in data.columns:
-        filtered_data = filtered_data[filtered_data['Country'].isin(selected_country)]
-    if 'Year' in data.columns:
-        filtered_data = filtered_data[filtered_data['Year'].isin(selected_year)]
 
-    # KPI Section
-    total_sales = filtered_data['Sales'].sum() if 'Sales' in filtered_data.columns else 0
-    total_profit = filtered_data['Profit'].sum() if 'Profit' in filtered_data.columns else 0
-    total_cogs = filtered_data['COGS'].sum() if 'COGS' in filtered_data.columns else 0
-    total_discount = filtered_data['Discounts'].sum() if 'Discounts' in filtered_data.columns else 0
+    if segment_filter and 'Segment' in data.columns:
+        filtered_data = filtered_data[filtered_data['Segment'].isin(segment_filter)]
+    if country_filter and 'Country' in data.columns:
+        filtered_data = filtered_data[filtered_data['Country'].isin(country_filter)]
+    if year_filter and 'Year' in data.columns:
+        filtered_data = filtered_data[filtered_data['Year'].isin(year_filter)]
+
+    # --------------------------- #
+    # 📊 KPI METRICS
+    # --------------------------- #
+    st.markdown("## 📌 Key Performance Indicators")
 
     kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    kpi1.metric("Total Sales", f"${total_sales:,.0f}")
-    kpi2.metric("Total Profit", f"${total_profit:,.0f}")
-    kpi3.metric("Total COGS", f"${total_cogs:,.0f}")
-    kpi4.metric("Total Discounts", f"${total_discount:,.0f}")
+    kpi1.metric("Total Sales", f"${filtered_data['Sales'].sum():,.0f}" if 'Sales' in filtered_data.columns else "N/A")
+    kpi2.metric("Total Profit", f"${filtered_data['Profit'].sum():,.0f}" if 'Profit' in filtered_data.columns else "N/A")
+    kpi3.metric("Total COGS", f"${filtered_data['COGS'].sum():,.0f}" if 'COGS' in filtered_data.columns else "N/A")
+    kpi4.metric("Total Discounts", f"${filtered_data['Discounts'].sum():,.0f}" if 'Discounts' in filtered_data.columns else "N/A")
 
     st.markdown("---")
 
-    # Visuals
-    tab1, tab2, tab3, tab4 = st.tabs(["Sales by Country", "Trend Over Time", "Gross vs Discount", "Product Discounts"])
+    # --------------------------- #
+    # 📈 TABS FOR DATA VISUALIZATIONS
+    # --------------------------- #
+    tab1, tab2, tab3, tab4 = st.tabs(["🌍 Sales by Country", "📆 Trend Over Time", "💸 Gross vs Discount", "🔥 Product Heatmap"])
 
     with tab1:
         if {'Country', 'Sales', 'Profit'}.issubset(filtered_data.columns):
-            chart_data = filtered_data.groupby('Country').agg({'Sales': 'sum', 'Profit': 'sum'}).reset_index()
-            fig = px.bar(chart_data, x='Country', y='Sales', color='Profit', title="Sales and Profit by Country")
-            st.plotly_chart(fig, use_container_width=True)
+            country_summary = filtered_data.groupby('Country')[['Sales', 'Profit']].sum().reset_index()
+            fig1 = px.bar(country_summary, x='Country', y='Sales', color='Profit', title="Sales and Profit by Country")
+            st.plotly_chart(fig1, use_container_width=True)
 
     with tab2:
         if {'Year', 'Month Name', 'Sales'}.issubset(filtered_data.columns):
-            trend_data = filtered_data.groupby(['Year', 'Month Name']).agg({'Sales': 'sum', 'Profit': 'sum'}).reset_index()
-            fig = px.line(trend_data, x='Month Name', y='Sales', color='Year', title="Sales Trend Over Time")
-            st.plotly_chart(fig, use_container_width=True)
+            trend_data = filtered_data.groupby(['Year', 'Month Name'])[['Sales', 'Profit']].sum().reset_index()
+            fig2 = px.line(trend_data, x='Month Name', y='Sales', color='Year', markers=True, title="Monthly Sales Trends")
+            st.plotly_chart(fig2, use_container_width=True)
 
     with tab3:
         if {'Gross Sales', 'Discounts', 'Country'}.issubset(filtered_data.columns):
-            fig = px.scatter(filtered_data, x='Gross Sales', y='Discounts', color='Country', title="Gross Sales vs Discounts")
-            st.plotly_chart(fig, use_container_width=True)
+            fig3 = px.scatter(filtered_data, x='Gross Sales', y='Discounts', color='Country', title="Gross Sales vs Discounts")
+            st.plotly_chart(fig3, use_container_width=True)
 
     with tab4:
         if {'Product', 'Discount Band', 'Sales'}.issubset(filtered_data.columns):
-            heatmap_data = filtered_data.groupby(['Product', 'Discount Band']).agg({'Sales': 'sum'}).reset_index()
-            fig = px.density_heatmap(
-                heatmap_data,
-                x='Discount Band',
-                y='Product',
-                z='Sales',
-                color_continuous_scale='Blues',
-                title="Sales by Product and Discount Band"
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            heatmap = filtered_data.groupby(['Product', 'Discount Band'])['Sales'].sum().reset_index()
+            fig4 = px.density_heatmap(heatmap, x='Discount Band', y='Product', z='Sales',
+                                      color_continuous_scale='Viridis', title="Sales by Product and Discount Band")
+            st.plotly_chart(fig4, use_container_width=True)
 
 else:
-    st.info("Please upload the dataset to get started.")
+    st.info("📂 Please upload a dataset file to begin analyzing.")
+
 
 
 
